@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
   User, Book, Award, Star, Globe, Code,
-  Calendar, Briefcase, ChevronUp, ChevronDown,
+  Calendar, Briefcase,
   Menu, X, Hexagon, ArrowRight, ArrowLeft,
   Volume2, VolumeX, Shield, Brain, Cloud, Github, Linkedin, Instagram
 } from 'lucide-react';
@@ -28,7 +29,6 @@ type Notification = {
 const MobileGameUI = () => {
   // All useState hooks first
   const [activeSection, setActiveSection] = useState<string>('overview');
-  const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [radialMenuOpen, setRadialMenuOpen] = useState<boolean>(false);
   const [wheelRotation, setWheelRotation] = useState<number>(0);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -93,6 +93,16 @@ const MobileGameUI = () => {
     };
   }, []);
 
+  // Duplicate declaration removed
+
+  const addNotification = (message: string): void => {
+    const id = generateUniqueId();
+    setNotifications((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 3000);
+  };
+
   // Audio toggle effect
   useEffect(() => {
     if (!audioRef.current) return;
@@ -121,7 +131,35 @@ const MobileGameUI = () => {
         audioRef.current.pause();
       }
     }
-  }, [isMusicOn]);
+  }, [isMusicOn, addNotification]);
+
+  const activateEasterEgg = (source: string) => {
+    if (!easterEggActiveRef.current) {
+      easterEggActiveRef.current = true;
+      setShowEasterEgg(true);
+      setEasterEggActive(true);
+      addNotification(`🎉 ${source} Easter Egg Unlocked!`);
+
+      setAnimationPhase(1);
+      setTimeout(() => setAnimationPhase(2), 300);
+      setTimeout(() => setAnimationPhase(3), 600);
+      setTimeout(() => setAnimationPhase(4), 900);
+      setTimeout(() => setAnimationPhase(5), 1200);
+
+      if (easterEggTimeoutRef.current) {
+        clearTimeout(easterEggTimeoutRef.current);
+      }
+
+      easterEggTimeoutRef.current = setTimeout(() => {
+        setAnimationPhase(0);
+        setShowEasterEgg(false);
+        setEasterEggActive(false);
+        addNotification('Easter Egg expired!');
+        easterEggActiveRef.current = false;
+        easterEggTimeoutRef.current = null;
+      }, 5000);
+    }
+  };
 
   // Konami code effect
   useEffect(() => {
@@ -173,43 +211,6 @@ const MobileGameUI = () => {
     idCounterRef.current += 1;
     return `${Date.now()}-${idCounterRef.current}-${Math.random().toString(36).substring(2, 9)}`;
   };
-
-  const addNotification = (message: string): void => {
-    const id = generateUniqueId();
-    setNotifications((prev) => [...prev, { id, message }]);
-    setTimeout(() => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 3000);
-  };
-
-  const activateEasterEgg = (source: string) => {
-    if (!easterEggActiveRef.current) {
-      easterEggActiveRef.current = true;
-      setShowEasterEgg(true);
-      setEasterEggActive(true);
-      addNotification(`🎉 ${source} Easter Egg Unlocked!`);
-
-      setAnimationPhase(1);
-      setTimeout(() => setAnimationPhase(2), 300);
-      setTimeout(() => setAnimationPhase(3), 600);
-      setTimeout(() => setAnimationPhase(4), 900);
-      setTimeout(() => setAnimationPhase(5), 1200);
-
-      if (easterEggTimeoutRef.current) {
-        clearTimeout(easterEggTimeoutRef.current);
-      }
-
-      easterEggTimeoutRef.current = setTimeout(() => {
-        setAnimationPhase(0);
-        setShowEasterEgg(false);
-        setEasterEggActive(false);
-        addNotification('Easter Egg expired!');
-        easterEggActiveRef.current = false;
-        easterEggTimeoutRef.current = null;
-      }, 5000);
-    }
-  };
-
   const handleProfileTap = () => {
     if (tapTimeout.current) {
       clearTimeout(tapTimeout.current);
@@ -484,7 +485,7 @@ const MobileGameUI = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    {React.cloneElement(tab.icon as React.ReactElement<any>, {
+                    {React.cloneElement(tab.icon as React.ReactElement<React.SVGProps<SVGSVGElement>>, {
                       className: "w-6 h-6 text-white"
                     })}
                   </motion.button>
@@ -511,9 +512,11 @@ const MobileGameUI = () => {
         >
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-cyan-400">
-              <img
+              <Image
                 src="/profile_pic.jpg"
                 alt="Profile"
+                width={64}
+                height={64}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -528,10 +531,10 @@ const MobileGameUI = () => {
             </div>
           </div>
           <div className="mt-2 flex space-x-2">
-                  <Github className="hover:text-cyan-400 cursor-pointer" />
-                  <Linkedin className="hover:text-cyan-400 cursor-pointer" />
-                  <Instagram className="hover:text-cyan-400 cursor-pointer" />
-                </div>
+            <Github className="hover:text-cyan-400 cursor-pointer" />
+            <Linkedin className="hover:text-cyan-400 cursor-pointer" />
+            <Instagram className="hover:text-cyan-400 cursor-pointer" />
+          </div>
         </motion.div>
 
         {/* Navigation Indicators */}
