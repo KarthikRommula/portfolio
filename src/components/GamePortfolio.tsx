@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import {
   User, Book, Award, Star, Globe, Code,
   Calendar, Briefcase, ChevronUp, ChevronDown,
@@ -7,7 +8,6 @@ import {
   Volume2, VolumeX, Shield, Brain, Cloud, Github, Linkedin, Instagram
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 
 // Define types for tab items
 type TabItem = {
@@ -25,9 +25,10 @@ type Notification = {
   message: string;
 };
 
-const GamePortfolio = () => {
+const MobileGameUI = () => {
   // All useState hooks first
   const [activeSection, setActiveSection] = useState<string>('overview');
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const [radialMenuOpen, setRadialMenuOpen] = useState<boolean>(false);
   const [wheelRotation, setWheelRotation] = useState<number>(0);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -35,13 +36,15 @@ const GamePortfolio = () => {
   const [swipeDirection, setSwipeDirection] = useState<SwipeDirection>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isMusicOn, setIsMusicOn] = useState<boolean>(false);
-  const [easterEggActive, setEasterEggActive] = useState<boolean>(false);
-  const [animationPhase, setAnimationPhase] = useState<number>(0);
+  const [showEasterEgg, setShowEasterEgg] = useState<boolean>(false);
   const [experience, setExperience] = useState<number>(0);
   const [konami, setKonami] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [xp, setXp] = useState<number>(0);
   const [level, setLevel] = useState<number>(1);
+  const [easterEggActive, setEasterEggActive] = useState<boolean>(false);
+  const [animationPhase, setAnimationPhase] = useState<number>(0);
+  const [tapCount, setTapCount] = useState<number>(0);
 
   // All useRef hooks next
   const idCounterRef = useRef<number>(0);
@@ -51,41 +54,6 @@ const GamePortfolio = () => {
   const easterEggActiveRef = useRef<boolean>(false);
   const easterEggTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const wheelRef = useRef<HTMLDivElement | null>(null);
-
-  // Creating callback functions to avoid dependency warnings
-  const addNotification = useCallback((message: string): void => {
-    const id = generateUniqueId();
-    setNotifications((prev) => [...prev, { id, message }]);
-    setTimeout(() => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 3000);
-  }, []);
-
-  const activateEasterEgg = useCallback((source: string) => {
-    if (!easterEggActiveRef.current) {
-      easterEggActiveRef.current = true;
-      setEasterEggActive(true);
-      addNotification(`🎉 ${source} Easter Egg Unlocked!`);
-
-      setAnimationPhase(1);
-      setTimeout(() => setAnimationPhase(2), 300);
-      setTimeout(() => setAnimationPhase(3), 600);
-      setTimeout(() => setAnimationPhase(4), 900);
-      setTimeout(() => setAnimationPhase(5), 1200);
-
-      if (easterEggTimeoutRef.current) {
-        clearTimeout(easterEggTimeoutRef.current);
-      }
-
-      easterEggTimeoutRef.current = setTimeout(() => {
-        setAnimationPhase(0);
-        setEasterEggActive(false);
-        addNotification('Easter Egg expired!');
-        easterEggActiveRef.current = false;
-        easterEggTimeoutRef.current = null;
-      }, 5000);
-    }
-  }, [addNotification]);
 
   // Initialize Experience for loading screen
   useEffect(() => {
@@ -153,7 +121,7 @@ const GamePortfolio = () => {
         audioRef.current.pause();
       }
     }
-  }, [isMusicOn, addNotification]);
+  }, [isMusicOn]);
 
   // Konami code effect
   useEffect(() => {
@@ -172,9 +140,10 @@ const GamePortfolio = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [konami, activateEasterEgg]);
+  }, [konami]);
 
   // XP and level up effect
+  // In the XP and level up effect
   useEffect(() => {
     const interval = setInterval(() => {
       setXp((prevXp) => {
@@ -197,7 +166,7 @@ const GamePortfolio = () => {
       });
     }, 3000);
     return () => clearInterval(interval);
-  }, [level, addNotification]);
+  }, [level]); // Add level as a dependency
 
   // Functions after all hooks
   const generateUniqueId = (): string => {
@@ -205,12 +174,47 @@ const GamePortfolio = () => {
     return `${Date.now()}-${idCounterRef.current}-${Math.random().toString(36).substring(2, 9)}`;
   };
 
+  const addNotification = (message: string): void => {
+    const id = generateUniqueId();
+    setNotifications((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    }, 3000);
+  };
+
+  const activateEasterEgg = (source: string) => {
+    if (!easterEggActiveRef.current) {
+      easterEggActiveRef.current = true;
+      setShowEasterEgg(true);
+      setEasterEggActive(true);
+      addNotification(`🎉 ${source} Easter Egg Unlocked!`);
+
+      setAnimationPhase(1);
+      setTimeout(() => setAnimationPhase(2), 300);
+      setTimeout(() => setAnimationPhase(3), 600);
+      setTimeout(() => setAnimationPhase(4), 900);
+      setTimeout(() => setAnimationPhase(5), 1200);
+
+      if (easterEggTimeoutRef.current) {
+        clearTimeout(easterEggTimeoutRef.current);
+      }
+
+      easterEggTimeoutRef.current = setTimeout(() => {
+        setAnimationPhase(0);
+        setShowEasterEgg(false);
+        setEasterEggActive(false);
+        addNotification('Easter Egg expired!');
+        easterEggActiveRef.current = false;
+        easterEggTimeoutRef.current = null;
+      }, 5000);
+    }
+  };
+
   const handleProfileTap = () => {
     if (tapTimeout.current) {
       clearTimeout(tapTimeout.current);
     }
 
-    const tapCount = 0;
     setTapCount(prevCount => {
       const newCount = prevCount + 1;
 
@@ -220,7 +224,7 @@ const GamePortfolio = () => {
       }
 
       tapTimeout.current = setTimeout(() => {
-        setTapCount(() => 0);
+        setTapCount(0);
       }, 3000);
 
       return newCount;
@@ -322,14 +326,6 @@ const GamePortfolio = () => {
     return { x, y };
   };
 
-  // Helper function to avoid TypeScript error
-  const setTapCount = (updater: (prevCount: number) => number) => {
-    // This function is just a placeholder to avoid the TypeScript error
-    // In a real implementation, it would be a proper state setter
-    const result = updater(0);
-    return result;
-  };
-
   // Early rendering for loading screen
   if (isLoading) {
     return (
@@ -357,7 +353,8 @@ const GamePortfolio = () => {
       {/* Floating Action Button - Game-style menu toggle */}
       <button
         onClick={toggleRadialMenu}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full bg-cyan-500 flex items-center justify-center shadow-lg border-4 border-cyan-300"
+        className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full bg-cyan-500 
+                  flex items-center justify-center shadow-lg border-4 border-cyan-300"
       >
         {radialMenuOpen ?
           <X className="w-8 h-8 text-white" /> :
@@ -368,23 +365,22 @@ const GamePortfolio = () => {
       {/* Easter Egg Animation */}
       {easterEggActive && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${animationPhase > 0 ? 'opacity-50' : 'opacity-0'}`}></div>
+          <div className={`absolute inset-0 bg-black transition-opacity duration-500 ${animationPhase > 0 ? 'opacity-50' : 'opacity-0'
+            }`}></div>
 
-          <div className={`absolute rounded-full bg-yellow-500 transition-all duration-300 transform ${
-            animationPhase === 1 ? 'scale-0 opacity-0' :
+          <div className={`absolute rounded-full bg-yellow-500 transition-all duration-300 transform ${animationPhase === 1 ? 'scale-0 opacity-0' :
             animationPhase === 2 ? 'scale-50 opacity-90' :
-            animationPhase === 3 ? 'scale-100 opacity-80' :
-            animationPhase === 4 ? 'scale-150 opacity-60' :
-            animationPhase === 5 ? 'scale-200 opacity-40' : 'scale-0 opacity-0'
-          }`} style={{ width: '100px', height: '100px' }}></div>
+              animationPhase === 3 ? 'scale-100 opacity-80' :
+                animationPhase === 4 ? 'scale-150 opacity-60' :
+                  animationPhase === 5 ? 'scale-200 opacity-40' : 'scale-0 opacity-0'
+            }`} style={{ width: '100px', height: '100px' }}></div>
 
           <div className="relative">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}
-                className={`absolute w-4 h-4 rounded-full bg-orange-500 transition-all duration-700 ${
-                  animationPhase >= 3 ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute w-4 h-4 rounded-full bg-orange-500 transition-all duration-700 ${animationPhase >= 3 ? 'opacity-100' : 'opacity-0'
+                  }`}
                 style={{
                   transform: animationPhase >= 3
                     ? `translate(${Math.cos(i * 30 * Math.PI / 180) * 150}px, ${Math.sin(i * 30 * Math.PI / 180) * 150}px) scale(${1 - (i % 3) * 0.2})`
@@ -397,19 +393,16 @@ const GamePortfolio = () => {
 
           <div className={`bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 
                           text-transparent bg-clip-text text-5xl font-extrabold p-6 
-                          transform transition-all duration-700 z-10 ${
-                            animationPhase >= 3 ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                          }`}>
+                          transform transition-all duration-700 z-10 ${animationPhase >= 3 ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+            }`}>
             🎊 SECRET MODE UNLOCKED! 🎊
           </div>
 
-          <div className={`absolute rounded-full border-4 border-cyan-400 transition-all duration-1000 ${
-            animationPhase >= 3 ? 'scale-150 opacity-40' : 'scale-0 opacity-0'
-          }`} style={{ width: '200px', height: '200px' }}></div>
+          <div className={`absolute rounded-full border-4 border-cyan-400 transition-all duration-1000 ${animationPhase >= 3 ? 'scale-150 opacity-40' : 'scale-0 opacity-0'
+            }`} style={{ width: '200px', height: '200px' }}></div>
 
-          <div className={`absolute rounded-full border-2 border-white transition-all duration-1200 ${
-            animationPhase >= 4 ? 'scale-200 opacity-20' : 'scale-0 opacity-0'
-          }`} style={{ width: '300px', height: '300px' }}></div>
+          <div className={`absolute rounded-full border-2 border-white transition-all duration-1200 ${animationPhase >= 4 ? 'scale-200 opacity-20' : 'scale-0 opacity-0'
+            }`} style={{ width: '300px', height: '300px' }}></div>
         </div>
       )}
 
@@ -491,7 +484,7 @@ const GamePortfolio = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    {React.cloneElement(tab.icon, {
+                    {React.cloneElement(tab.icon as React.ReactElement<any>, {
                       className: "w-6 h-6 text-white"
                     })}
                   </motion.button>
@@ -517,12 +510,11 @@ const GamePortfolio = () => {
           onClick={handleProfileTap}
         >
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 relative rounded-full overflow-hidden border-2 border-cyan-400">
-              <Image
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-cyan-400">
+              <img
                 src="/profile_pic.jpg"
                 alt="Profile"
-                fill
-                className="object-cover"
+                className="w-full h-full object-cover"
               />
             </div>
             <div>
@@ -536,10 +528,10 @@ const GamePortfolio = () => {
             </div>
           </div>
           <div className="mt-2 flex space-x-2">
-            <Github className="hover:text-cyan-400 cursor-pointer" />
-            <Linkedin className="hover:text-cyan-400 cursor-pointer" />
-            <Instagram className="hover:text-cyan-400 cursor-pointer" />
-          </div>
+                  <Github className="hover:text-cyan-400 cursor-pointer" />
+                  <Linkedin className="hover:text-cyan-400 cursor-pointer" />
+                  <Instagram className="hover:text-cyan-400 cursor-pointer" />
+                </div>
         </motion.div>
 
         {/* Navigation Indicators */}
@@ -651,6 +643,7 @@ const GamePortfolio = () => {
                         initial={{ x: -50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: index * 0.1 }}
+
                       >
                         <div className="bg-gray-800 p-2 rounded-full">
                           {achievement.icon}
@@ -679,31 +672,32 @@ const GamePortfolio = () => {
                     {[
                       { title: 'ChatSecure', type: 'App', desc: 'End-to-end encrypted messaging app', level: 'Epic' },
                       { title: 'HackHub', type: 'Web', desc: 'Platform for organizing hackathons', level: 'Rare' },
-                      { title: 'ZeroX', type: 'Tool', desc: 'Developer productivity toolkit', level: 'Uncommon' },
-                      { title: 'DataViz', type: 'Library', desc: 'Interactive data visualization components', level: 'Rare' }
+                      { title: 'ZeroX', type: 'Tool', desc: 'AI-powered text extraction tool', level: 'Legendary' }
                     ].map((project, index) => (
                       <motion.div
                         key={`project-${index}`}
-                        className="bg-gray-700 p-4 rounded-lg border-l-4 border-cyan-500"
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.1 }}
+                        className="bg-gray-700 rounded-lg overflow-hidden"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.15 }}
                       >
-                        <div className="flex justify-between mb-2">
-                          <h3 className="font-bold text-lg">{project.title}</h3>
-                          <span className={`text-xs px-2 py-1 rounded-full
-                            ${project.level === 'Common' ? 'bg-gray-600' :
-                              project.level === 'Uncommon' ? 'bg-green-600' :
+                        <div className="p-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-bold text-lg">{project.title}</h4>
+                            <span className={`text-xs px-2 py-1 rounded
+                                ${project.level === 'Common' ? 'bg-gray-600' :
                                 project.level === 'Rare' ? 'bg-blue-600' :
-                                  'bg-purple-600'}`}>
-                            {project.level}
-                          </span>
+                                  project.level === 'Epic' ? 'bg-purple-600' :
+                                    'bg-yellow-600'}`}>
+                              {project.level}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-400 mt-1">Type: {project.type}</div>
+                          <p className="mt-2">{project.desc}</p>
+                          <button className="mt-3 bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm">
+                            View Details
+                          </button>
                         </div>
-                        <div className="flex items-center mb-2">
-                          <span className="text-xs bg-gray-800 px-2 py-1 rounded mr-2">{project.type}</span>
-                          <span className="text-gray-400 text-sm">{project.desc}</span>
-                        </div>
-                        <button className="text-cyan-400 text-sm hover:underline mt-2">View Project</button>
                       </motion.div>
                     ))}
                   </div>
@@ -715,39 +709,29 @@ const GamePortfolio = () => {
                   <h2 className="text-2xl font-bold border-b-2 border-cyan-500 pb-2 mb-4">Skills</h2>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { name: 'JavaScript', level: 95, icon: <Code /> },
-                      { name: 'React', level: 92, icon: <Code /> },
-                      { name: 'Node.js', level: 88, icon: <Code /> },
-                      { name: 'TypeScript', level: 85, icon: <Code /> },
-                      { name: 'HTML/CSS', level: 90, icon: <Code /> },
-                      { name: 'Git', level: 87, icon: <Code /> },
-                      { name: 'UI/UX', level: 80, icon: <Shield /> },
-                      { name: 'Testing', level: 75, icon: <Shield /> },
-                      { name: 'AWS', level: 70, icon: <Cloud /> },
-                      { name: 'Python', level: 65, icon: <Code /> }
+                      { name: 'React', level: 92 },
+                      { name: 'TypeScript', level: 85 },
+                      { name: 'Node.js', level: 78 },
+                      { name: 'Python', level: 70 },
+                      { name: 'UI/UX', level: 65 },
+                      { name: 'DevOps', level: 60 }
                     ].map((skill, index) => (
                       <motion.div
                         key={`skill-${index}`}
                         className="bg-gray-700 p-3 rounded-lg"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: index * 0.05 }}
+                        transition={{ delay: index * 0.1 }}
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center">
-                            <div className="mr-2 text-cyan-400">
-                              {skill.icon}
-                            </div>
-                            <span className="text-sm font-medium">{skill.name}</span>
-                          </div>
-                          <span className="text-xs text-cyan-400">Lv.{Math.floor(skill.level / 10)}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{skill.name}</span>
                         </div>
-                        <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div className="w-full bg-gray-800 h-2 mt-2 rounded-full overflow-hidden">
                           <motion.div
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full"
+                            className="bg-gradient-to-r from-blue-500 to-cyan-500 h-full rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${skill.level}%` }}
-                            transition={{ duration: 1, delay: index * 0.05 }}
+                            transition={{ duration: 1, delay: 0.3 + index * 0.1 }}
                           />
                         </div>
                       </motion.div>
@@ -761,26 +745,28 @@ const GamePortfolio = () => {
                   <h2 className="text-2xl font-bold border-b-2 border-cyan-500 pb-2 mb-4">Certifications</h2>
                   <div className="space-y-4">
                     {[
-                      { name: 'AWS Certified Developer', date: '2023', org: 'Amazon Web Services', exp: 500 },
-                      { name: 'Professional React Developer', date: '2022', org: 'React Certification Authority', exp: 750 },
-                      { name: 'Azure Fundamentals', date: '2022', org: 'Microsoft', exp: 350 },
-                      { name: 'Google Cloud Associate', date: '2021', org: 'Google', exp: 400 }
+                      { name: 'Advanced React Patterns', date: '2023', issuer: 'Frontend Masters', icon: <Code /> },
+                      { name: 'AWS Solutions Architect', date: '2022', issuer: 'Amazon', icon: <Cloud /> },
+                      { name: 'Machine Learning Engineer', date: '2021', issuer: 'DeepLearning.AI', icon: <Brain /> },
+                      { name: 'Cybersecurity Specialist', date: '2022', issuer: 'CompTIA', icon: <Shield /> }
                     ].map((cert, index) => (
                       <motion.div
                         key={`cert-${index}`}
-                        className="bg-gray-700 p-4 rounded-lg border-2 border-gray-600 flex justify-between"
-                        initial={{ x: index % 2 === 0 ? -20 : 20, opacity: 0 }}
+                        className="bg-gray-700 p-4 rounded-lg flex items-start space-x-3"
+                        initial={{ x: -30, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: index * 0.1 }}
+                        transition={{ delay: index * 0.15 }}
                       >
-                        <div>
-                          <h3 className="font-bold text-lg">{cert.name}</h3>
-                          <p className="text-sm text-gray-400">{cert.org}</p>
-                          <p className="text-xs text-gray-500">{cert.date}</p>
+                        <div className="bg-cyan-600 p-2 rounded-md mt-1">
+                          {cert.icon}
                         </div>
-                        <div className="flex flex-col items-center justify-center bg-gray-800 px-3 py-1 rounded">
-                          <span className="text-cyan-400 font-bold">+{cert.exp}</span>
-                          <span className="text-xs text-gray-400">EXP</span>
+                        <div>
+                          <h4 className="font-bold">{cert.name}</h4>
+                          <p className="text-sm text-gray-400">{cert.issuer}</p>
+                          <div className="flex items-center mt-1 text-xs text-gray-400">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            <span>{cert.date}</span>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -791,32 +777,32 @@ const GamePortfolio = () => {
               {activeSection === 'experience' && (
                 <div>
                   <h2 className="text-2xl font-bold border-b-2 border-cyan-500 pb-2 mb-4">Experience</h2>
-                  <div className="relative border-l-2 border-gray-600 pl-4 ml-2 space-y-8">
+                  <div className="space-y-6">
                     {[
-                      { role: 'Senior Developer', company: 'TechCorp', period: '2021 - Present', desc: 'Led development of multiple React applications' },
-                      { role: 'Frontend Developer', company: 'WebGurus', period: '2019 - 2021', desc: 'Built responsive web applications and APIs' },
-                      { role: 'Junior Developer', company: 'CodeLabs', period: '2017 - 2019', desc: 'Contributed to various frontend and backend projects' }
-                    ].map((job, index) => (
+                      { role: 'Senior Frontend Developer', company: 'TechGuild', period: '2021 - Present', level: 'Legendary' },
+                      { role: 'Full Stack Developer', company: 'WebWizards', period: '2018 - 2021', level: 'Epic' },
+                      { role: 'Junior Developer', company: 'CodeCraft', period: '2016 - 2018', level: 'Rare' }
+                    ].map((exp, index) => (
                       <motion.div
                         key={`exp-${index}`}
-                        className="relative"
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.2 }}
+                        className="relative pl-6 border-l-2 border-cyan-500"
                       >
-                        {/* Timeline Node */}
-                        <div className="absolute w-4 h-4 bg-cyan-500 rounded-full -left-6 mt-1 transform -translate-x-1/2"></div>
-                        
-                        {/* Content */}
+                        <div className="absolute w-4 h-4 bg-cyan-500 rounded-full -left-[9px] top-0" />
                         <div className="bg-gray-700 p-4 rounded-lg">
-                          <div className="flex justify-between">
-                            <h3 className="font-bold text-lg">{job.role}</h3>
-                            <span className="text-xs bg-gray-800 px-2 py-1 rounded-full text-cyan-400">
-                              {job.period}
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-bold">{exp.role}</h4>
+                            <span className={`text-xs px-2 py-1 rounded
+                                ${exp.level === 'Rare' ? 'bg-blue-600' :
+                                exp.level === 'Epic' ? 'bg-purple-600' :
+                                  'bg-yellow-600'}`}>
+                              {exp.level}
                             </span>
                           </div>
-                          <p className="text-gray-400">{job.company}</p>
-                          <p className="mt-2 text-sm">{job.desc}</p>
+                          <p className="text-cyan-400">{exp.company}</p>
+                          <div className="text-sm text-gray-400 mt-1">{exp.period}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -826,33 +812,10 @@ const GamePortfolio = () => {
             </motion.div>
           </AnimatePresence>
         </div>
-      </div>
 
-      {/* Bottom Navigation Bar - Mini Tab Selector */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t-2 border-gray-700 px-4 py-2 flex justify-around z-30">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`p-2 rounded-lg flex flex-col items-center transition-colors ${
-              activeSection === tab.id ? 'text-cyan-400 bg-gray-700' : 'text-gray-400'
-            }`}
-            onClick={() => setActiveSection(tab.id)}
-          >
-            {React.cloneElement(tab.icon, {
-              className: "w-5 h-5"
-            })}
-            <span className="text-xs mt-1">{tab.title}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Game HUD Elements */}
-      <div className="fixed top-4 left-4 flex items-center space-x-2 bg-gray-800 px-3 py-2 rounded-lg border border-gray-700">
-        <Brain className="text-cyan-400 w-5 h-5" />
-        <span className="text-sm font-medium">Level {level}</span>
       </div>
     </div>
   );
 };
 
-export default GamePortfolio;
+export default MobileGameUI;
