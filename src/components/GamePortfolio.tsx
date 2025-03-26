@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
   User, Book, Award, Star, Globe, Code,
   Calendar, Briefcase, ChevronUp, ChevronDown,
@@ -412,11 +413,13 @@ const MobileGameUI = () => {
           onClick={handleProfileTap}
         >
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-cyan-400">
-              <img
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-cyan-400 relative">
+              <Image
                 src="/profile_pic.jpg"
                 alt="Profile"
-                className="w-full h-full object-cover"
+                layout="fill"
+                objectFit="cover"
+                priority
               />
             </div>
             <div>
